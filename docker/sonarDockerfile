@@ -1,0 +1,22 @@
+# Use an official base image of SonarQube Community Edition from Docker Hub
+FROM sonarqube:community
+
+# Maintainer label
+#LABEL maintainer="Your Name <your.email@example.com>"
+
+# Environment variables for database connection
+ENV SONARQUBE_JDBC_URL=jdbc:postgresql://enumv2prod-db.c4gep8ccwxth.eu-west-1.rds.amazonaws.com:5432/sonarDB
+ENV SONARQUBE_JDBC_USERNAME=postgresdb
+ENV SONARQUBE_JDBC_PASSWORD=GDmzdhj7J69XFE4uWyYb
+
+ENV SONAR_PROJECTKEY = enumverse-project
+ENV SONAR_PROJECTNAME = enumverse
+ENV SONAR_SOURCES = src
+ENV SONAR_JAVA_BINARIES = target/classes
+ENV SONAR_JAVA_SOURECE = 11
+ENV SONAR_JAVA_TARGET = 11
+
+# Expose ports (if needed)
+EXPOSE 9000
+# EXPOSE 9092
+

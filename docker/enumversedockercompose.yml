@@ -1,0 +1,37 @@
+version: '3'
+services:
+  redis:
+    image: redis
+    ports:
+      - "6379:6379"
+    environment:
+      REDIS_USER: admin
+      REDIS_PASSWORD: password
+    networks:
+      - enumverse_web_net
+    restart: on-failure
+
+  postgresDB:
+    container_name: enum_postgres_db
+    image: postgres:alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: default_db
+      PGDATA: /data/postgres
+    volumes:
+      - enumverse_db_data:/data/postgres
+    networks:
+      - enumverse_web_net
+    ports:
+      - "5431:5432"
+    restart: always
+
+  api-gateway:
+    build: .
+    image: api-gateway
+    environment:
+      - PROFILE=dev # Set the desired profile here
+    ports:
+      - "8080:8080"
+# Add other services as needed

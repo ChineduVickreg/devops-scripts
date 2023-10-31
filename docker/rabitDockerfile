@@ -1,0 +1,20 @@
+FROM rabbitmq:3.9-management
+
+#COPY /etc/rabbitmq/my_rabbitmq.conf
+#COPY rabbitmq.conf /etc/rabbitmq
+# Set environment variables for RabbitMQ
+ENV RABBITMQ_DEFAULT_USER=enumverse
+ENV RABBITMQ_DEFAULT_PASS=Qzg4jR7hRQjT6CjJqvXq
+ENV RABBITMQ_DEFAULT_VHOST=/enumversebroker
+#ENV RABBITMQ_HOST=api-rabbitmq.enum.africa
+#ENV RABBITMQ_PORT=15672
+# Copy a custom configuration file into the container
+#COPY rabbitmq.config /etc/rabbitmq/
+#COPY rabbitmq.conf /etc/rabbitmq/my_rabbitmq.conf
+
+EXPOSE 5671
+EXPOSE 5672
+EXPOSE 15672
+
+
+CMD ["rabbitmq-server"]
