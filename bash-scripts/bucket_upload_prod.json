@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: verify-prod-statement-upload
+  namespace: prod
+type: Opaque
+stringData:
+    verify-prod-statement-upload.json: |
+        "type": "service_account",
+        "project_id": "spleet-cms-1568627972284",
+        "private_key_id": "a2291534f7728ee1bcab3e4ec63ddd21cb70d3c5",
+        "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDWXZTQb9x3BVSk\n1/hsekR7RIxqbICB2AcGzjErcYknH8LYQoXve7X15BSsuUFCoQB/zgG5k1A+P/4g\nvbD9ZcWFE8LLE8tH7EIcO6jniB+pOjaUSmDVsaNjtBA7Xk8OZ9mXZgXpeswzBoOZ\nOHURk6tBdoESzKvRuBw+wgZ+TRM7rCdFi9wfHGcx59CVTqGbXcjvgl/EAdNiHW4m\n2Kk7SYzX9rxdlbRqUdq99+9/Wm9+3Z3FqJOAQW0yhXgbCfEO18/r/82by2lfrwNS\nsxyF9qZV51RqejUc+PmHnHWgL/+6MwLV6cXdqPoAM499v+A5onIPNfCYlC+KCpjc\n34vmspMXAgMBAAECggEAT92j0RisGgf5ZkU0wC25j/eVHR15r2auD4II3be6MsJp\nlKsMPZJo08j7TvLidpGHnxZAnERfVCIBa29hHrepJJCdNY4VYaGLa/tqTYDw0trm\ndM9VTqiVSFNQ7N2RNLvKXNbdAwUGSUh3BUH8k+ThnE0rf7aTmVov483kH3BV5xfo\nyfyvlKg7JD++HYRre0iZwlE2xwGOzPjhLPNiCKDX7hpi1/kWqE8/ByDDkIWpmsv0\nj3W2uwpyDCevrhmo5efnSgflN6W+gTefmx4B6xY8HZIMIUwH4UdhheDF4ujYGRTe\niEv8u8nypa8Ba39avatD01MunkB1Oq4XWohvSxvNwQKBgQD53OMCGldg2EYWrEO9\n/TlBp9Ow6r29Wvop04y96oWINHQc0COPF1R2YxgQtL5E4lNV1u+SMSuHdWuNIeeb\nfRfTWuz+EuWw4kru89odrotsUIfWBLPEO+1AWseBywPBlUXeH1bJ7VAfwR674gYC\ni6ZcaeHkEDws8kvLCog2zVDuoQKBgQDboX22Y4JwmwD5XBqzI/n4rmOHdMS+TGw0\nvJjVacshmPL0aQivpFm8Zl4gubeVA4tjez5YT9asyoOCTFXlpDG7GigHWTmIOuWb\nXyKAfeaNveNUNv3cMfZhBMyGgPF0wj8gMU+MKnypul9JUq7SwSkpp4+6MXqamyZB\nEjm0fe0+twKBgQCS1SSuSq6Ioe/mSQtyLcok9Cwp7njcOweB5ujxfk1Ecpa9i+8p\nmqsu+yLcRmr97gbNDgcxYSXUb8NpZ8BElqmWsftNf+ttHD6u16yY/sa+O0DoG1FN\nA250ACT3+EbXzxIE62PEPGp2jrWx8axYeJql+i8eKBBE1YqG4kST9+oUoQKBgHqe\nbZ4fblrJ30BYsLtlEZFKY1zjz1fjOOI0jStRFkyapMHZxjSxkDwD9vdUWG9EfFS9\nIPCTGmp74fIkBizgf7dTAhggM2OgZkJZWdzc7ZQi+MEytoZyCnjeAgXyBVxHepDR\nlvTNX64u1DYOiHY3y3BrEW5FY4rfpfrcXwUq7QJ/AoGAfXle9fdcZuPsmx/+Bqxr\nTPgehrCFEFhfb8bF5Ij6uuo9/1/ljGq0rRAecJgFIGkkxz6L7bBiFYyr1W5PfxLc\nVeuQ0YanLmsuogF3gPFaYyEhR+hFK22TWTvNF7A4a92ZUUrerQl/0OCCEpMohi0s\nK7149sp9+zqKOssvocnOwQg=\n-----END PRIVATE KEY-----\n",
+        "client_email": "verify-prod-statement-service@spleet-cms-1568627972284.iam.gserviceaccount.com",
+        "client_id": "101765958583165921445",
+        "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+        "token_uri": "https://oauth2.googleapis.com/token",
+        "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+        "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/verify-prod-statement-service%40spleet-cms-1568627972284.iam.gserviceaccount.com",
+        "universe_domain": "googleapis.com"
+  

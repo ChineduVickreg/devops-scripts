@@ -1,0 +1,21 @@
+kind: Secret
+apiVersion: v1
+metadata:
+  name: verify-dev-statement-upload
+  namespace: dev
+type: Opaque
+stringData:
+{
+    "type": "service_account",
+    "project_id": "spleet-cms-1568627972284",
+    "private_key_id": "aa93a235cb5d012155422071526d505c83cf4871",
+    "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDWcd8C+q5kDyZ6\nVt7a6uNARJaLOgqDXBuFdek2faX2uZZIzWV0NvpU6U8+cm8+bu0FRaFylVgxjYlp\nWPc6VGYJ7+HKQsIPBqgcxgtWoYq3IhMbHINF1CFOw6fmZoxcN2Qj0ngAH0TQraXI\nUGDyDdUYgcnq7EFt/5KXzkQaR1WBQF3qnemmws71uQa2xM8SYVYt87utthRI12Op\nQoNDIg0Qh0VfevNok181FTbTD8kNkX9WmKb4cbVfeGYk6e3EzC04WepHPS5hZp9r\nXigfvWEWKOnD9CsDmH1Zp6OAEZSLiPe6gnl0QXJz8JSaYbuXtKh2RaMLGyoU9RkO\nZzqVvXRzAgMBAAECggEAC8ww9jN/Y57XwZRE52tTvEXpuFglmut20iVWArrv5f54\nz6GJKtcZd5FsXCWkjB1DKe6WPr0LoJJGVIbh9xIMmRBa7is1DOmTVx3oIsh5XrDf\ntzae3Dka6f/mnUzX/PzJJBVgp7UQrqBXBgmyA68SIaqGRsffo6MTWAmvgniZMiaU\nB2JmIUCzufRPtaB25mpm1smvuZv7PYW+APIOc3WW9GAaTtyK9BXgQmqdLy7R8a2E\n0MMS2p5gGcK6hz5Z0tPjZAyTuTVa+cTbOfLNVYq7m0PCA/Ir0Ndekose5mgvS7DJ\n5bur6YHd4Wldn2IYNn0M74qWNY664e4MmPgJ1ef7ZQKBgQD9tvSJupkYuho/8EDt\nUDb9a/w2Bc4r2f8FqMRbxsmX889UI1J0jOBc8+JY9M8C7jsSPn90MbzNOx5JK0VU\nsfzB0JJ4rtQnPvLgVddv5KO2zWnjIrML1RcxcObfk3Rl+Prf4RGE8lS6O883XECU\n3U7X8isWnFeD5oEBVAu7/4wIFwKBgQDYYFznYoAxzUeJwMl/f9PY8IHerBSUS2qG\nNiqggjNLMAb0igXuLmTYjiyuqnTPUUFNp9DNjFyZdh+oUd9P9q2bViw2bg01WTUE\nE7ayhrabIBJBsIrNz89VpIqPD5OnNv29EirdfW6FODgnVYJrBtlOQVL6VaI2DpQB\npRUb98yUBQKBgH3Cg0IFyT9VeA97YmN/YFKLhS+t/v0DiIJgnjwzs9drFbjJ7WQy\nNEA+71JSvo3gUk1/xyNsR/6esCtqlGof836KiR/i4Ow3KqKCSlB/T5scBMF+gKt7\ny4xJP1dROuAU4x237Twt9kt9u//f7W8cp6kos6z4f/S0e/uRkmN0jw+vAoGBAMEj\nyunTN8C8jwW8K2B+tpfnntUnXzs70js4sHYTojuUBDFV3pNLoELZLbM/fgLscdEi\nYbSIfMOS+BEj+6SB+Vc15UM0mt+q4DLicesLaoYva3xtXIj33QeCVxf5/H9/C6Ew\nTUjlxLhvhVg+8KoeM+yxTKMduyxreNu7Aouzdk4NAoGARj1n/h6sNBUscRXewAYk\nkC+rCZI6fTz5e/7FnSjULDQurnjvleR3yRZP9AMKjbBNkCb0XQMqNKGlO/gowCPK\nfcHwbPZ5LqaxxUG4k1nxRO+6VChZoOSn4UABrHfFT2QrXF6mlQsLPJqqNBWmkqNG\nC2BWhZm09vsrHkiunrBTRnA=\n-----END PRIVATE KEY-----\n",
+    "client_email": "verify-bank-statement-service@spleet-cms-1568627972284.iam.gserviceaccount.com",
+    "client_id": "114727507820133002161",
+    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+    "token_uri": "https://oauth2.googleapis.com/token",
+    "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+    "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/verify-bank-statement-service%40spleet-cms-1568627972284.iam.gserviceaccount.com",
+    "universe_domain": "googleapis.com"
+  }
+  

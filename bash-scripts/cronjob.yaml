@@ -1,0 +1,21 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: autoscale-cronjob
+  namespace: dev
+spec:
+  schedule: "0 22 * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: autoscale-container
+            image: google/cloud-sdk:latest
+            command: ["/bin/sh", "-c"]
+            args:
+            - kubectl create configmap shutdown-gke-script --from-file=shutdown_gke_cluster.sh --dry-run=client -o yaml | kubectl apply -f -
+            env:
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: /secrets/google-cloud-creds/creds.json
+          restartPolicy: OnFailure
