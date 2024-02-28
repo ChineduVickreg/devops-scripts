@@ -1,0 +1,1290 @@
+#manifest script for public manifest
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spleet-public-frontend-prod
+  namespace: spleet-public-frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: spleet-public-frontend-prod
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: spleet-public-frontend-prod
+    spec:
+      containers:
+        - name: spleet-public-frontend-prod
+          image: spleet/spleet-public-frontend-prod:31-66baba4e9876e86072adb0c270af98e47404b1ba
+          env:
+          - name: BASE_URL
+            valueFrom:
+              secretKeyRef:
+                name: spleet-public-prod-secrets
+                key: BASE_URL
+          - name: DASHBOARD_DOMAIN
+            valueFrom:
+              secretKeyRef:
+                name: spleet-public-prod-secrets
+                key: DASHBOARD_DOMAIN
+          - name: GOOGLE_MAP_KEY
+            valueFrom:
+              secretKeyRef:
+                name: spleet-public-prod-secrets
+                key: GOOGLE_MAP_KEY
+          - name: RNPL_BASE_URL
+            valueFrom:
+              secretKeyRef:
+                name: spleet-public-prod-secrets
+                key: RNPL_BASE_URL
+          - name: MAP_ID
+            valueFrom:
+              secretKeyRef:
+                name: spleet-public-prod-secrets
+                key: MAP_ID
+          - name: CLOUDINARY_BASE_URL
+            valueFrom:
+              secretKeyRef:
+                name: spleet-public-prod-secrets
+                key: CLOUDINARY_BASE_URL
+          - name: NUXT_SITE_ENV
+            valueFrom:
+              secretKeyRef:
+                name: spleet-public-prod-secrets
+                key: NUXT_SITE_ENV
+          - name: NODE_ENV
+            valueFrom:
+              secretKeyRef:
+                name: spleet-public-prod-secrets
+                key: NODE_ENV 
+          - name: WELCOME_PAGE
+            valueFrom:
+              secretKeyRef:
+                name: spleet-public-prod-secrets
+                key: WELCOME_PAGE                              
+
+          ports:
+          - containerPort: 3001
+            protocol: TCP
+        #  livenessProbe:
+        #    httpGet:
+        #      path: /
+        #      port: 3001
+        #    initialDelaySeconds: 150
+        #    periodSeconds: 280
+        #    failureThreshold: 5
+        #  readinessProbe:
+        #    httpGet:
+        #      path: /
+        #      port: 3001
+        #    initialDelaySeconds: 150
+        #    periodSeconds: 5
+        #    timeoutSeconds: 3
+        #    successThreshold: 1
+          
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          imagePullPolicy: Always
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      dnsPolicy: ClusterFirst
+      securityContext: {}
+      imagePullSecrets:
+        - name: regcred
+      schedulerName: default-scheduler
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 25%
+      maxSurge: 25%
+  revisionHistoryLimit: 10
+  progressDeadlineSeconds: 600
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: spleet-public-frontend-prod
+  namespace: spleet-public-frontend
+  labels:
+    app: spleet-public-frontend-prod
+    service: spleet-public-frontend-prod
+spec:
+  ports:
+  - port: 3001
+    name: http
+  selector:
+    app: spleet-public-frontend-prod
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: spleet-public-frontend-prod
+  namespace: spleet-public-frontend
+  annotations:
+    nginx.ingress.kubernetes.io/default-backend: ingress-nginx-controller
+    kubernetes.io/ingress.class: nginx 
+    ## tells ingress to check for regex in the config file
+    nginx.ingress.kubernetes.io/use-regex: 'true'
+    nginx.ingress.kubernetes.io/enable-cors: 'true'
+    nginx.ingress.kubernetes.io/cors-allow-methods: "PUT, GET, POST, PATCH, OPTIONS, DELETE"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "*"
+    nginx.ingress.kubernetes.io/cors-max-age: "600"
+#     nginx.ingress.kubernetes.io/configuration-snippet: |
+#     more_set_headers "Access-Control-Allow-Origin: $http_origin";
+    #certmanager.k8s.io/cluster-issuer: letsencrypt
+#     kubernetes.io/ingress.class: nginx
+#     service.beta.kubernetes.io/do-loadbalancer-enable-proxy-protocol: "true"
+
+spec:
+  rules:
+  - host: "spleet.africa"
+    http:
+      paths:
+      - pathType: Prefix
+        path: "/"
+        backend:
+          service:
+            name: spleet-public-frontend-prod
+            port:
+              number: 3001
+
+
+
+#manifest script for backend manifest
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prod-backend
+  namespace: prod
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: prod-backend
+  template:
+    metadata:
+      labels:
+        app: prod-backend
+    spec:
+      volumes:
+       - name: verifybucketupload
+         secret:
+           secretName: verify-prod-statement-upload
+      containers:
+        - name: prod-backend
+          image: spleet/backendapp:24-f8f54ac463ec6c00f5d373a561997df7fb931809
+          volumeMounts:
+            - name: verifybucketupload
+              mountPath: /app/verifybucketupload
+          env:
+          - name: DB_HOST
+            valueFrom:
+              secretKeyRef:
+                name: backend-new-secrets
+                key: DB_HOST
+          - name: DB_PORT
+            valueFrom:
+               secretKeyRef:
+                 name: backend-new-secrets
+                 key: DB_PORT
+          - name: DB_USER
+            valueFrom:
+              secretKeyRef:
+                name: backend-new-secrets
+                key: DB_USER
+          - name: DB_PASS
+            valueFrom:
+              secretKeyRef:
+                name: backend-new-secrets
+                key: DB_PASS
+          - name: DB_NAME
+            valueFrom:
+              secretKeyRef:
+                name: backend-new-secrets
+                key: DB_NAME
+          - name: DB_TYPE
+            valueFrom:
+              secretKeyRef:
+                name: backend-new-secrets
+                key: DB_TYPE       
+          - name: SECRET
+            valueFrom:
+              secretKeyRef:
+                 name: backend-new-secrets
+                 key: SECRET
+          - name: TOKENEXPIRATIONTIME
+            value: "604800" #7 days in seconds
+          - name: APP_BASE_URL
+            valueFrom:
+              secretKeyRef:
+                name: backend-new-secrets
+                key: APP_BASE_URL
+          - name: FACEBOOK_APP_ID
+            valueFrom:
+              secretKeyRef:
+                 name: backend-new-secrets
+                 key: FACEBOOK_APP_ID
+          - name: FACEBOOK_APP_SECRET
+            valueFrom:
+              secretKeyRef:
+                 name: backend-new-secrets
+                 key: FACEBOOK_APP_SECRET
+          - name: FLUTTERWAVE_TEST_SECRET
+            valueFrom:
+              secretKeyRef:
+                 name: backend-new-secrets
+                 key: FLUTTERWAVE_TEST_SECRET
+          - name: FLUTTERWAVE_HASH
+            valueFrom:
+              secretKeyRef:
+                 name: backend-new-secrets
+                 key: FLUTTERWAVE_HASH
+          - name: PAYSTACK_TEST_SECRET
+            valueFrom:
+              secretKeyRef:
+                 name: backend-new-secrets
+                 key: PAYSTACK_TEST_SECRET
+          - name: SPEKTRA_PUBLIC_KEY
+            valueFrom:
+              secretKeyRef:
+                 name: backend-new-secrets
+                 key: SPEKTRA_PUBLIC_KEY
+          - name: SPEKTRA_SECRET
+            valueFrom:
+              secretKeyRef:
+                 name: backend-new-secrets
+                 key: SPEKTRA_SECRET
+          - name: SPEKTRA_BASE_URL
+            valueFrom:
+              secretKeyRef:
+                 name: backend-new-secrets
+                 key: SPEKTRA_BASE_URL
+          - name: SPEKTRA_CHECKOUT_BASE_URL
+            valueFrom:
+              secretKeyRef:
+                 name: backend-new-secrets
+                 key: SPEKTRA_CHECKOUT_BASE_URL
+          - name: FRONTEND_MICRO_SITE_BASE_URL
+            valueFrom:
+              secretKeyRef:
+                 name: backend-new-secrets
+                 key: FRONTEND_MICRO_SITE_BASE_URL
+          - name: APPRUVE_ACCESS_TOKEN
+            valueFrom:
+              secretKeyRef:
+                 name: backend-new-secrets
+                 key: APPRUVE_ACCESS_TOKEN
+          - name: MANDRILL_SECRET_KEY
+            valueFrom:
+              secretKeyRef:
+                 name: backend-new-secrets
+                 key: MANDRILL_SECRET_KEY
+          - name: WELCOME_MAIL_SENDER
+            valueFrom:
+              secretKeyRef:
+                 name: backend-new-secrets
+                 key: WELCOME_MAIL_SENDER
+          - name: GOOGLE_CLIENT_ID
+            valueFrom:
+              secretKeyRef:
+                 name: backend-new-secrets
+                 key: GOOGLE_CLIENT_ID
+          - name: GOOGLE_SECRET
+            valueFrom:
+              secretKeyRef:
+                 name: backend-new-secrets
+                 key: GOOGLE_SECRET
+          - name: PASSPORT_VERIFICATION_API_STATUS
+            valueFrom:
+              secretKeyRef:
+                 name: backend-new-secrets
+                 key: PASSPORT_VERIFICATION_API_STATUS
+          - name: NIN_VERIFICATION_API_STATUS
+            valueFrom:
+              secretKeyRef:
+                 name: backend-new-secrets
+                 key: NIN_VERIFICATION_API_STATUS
+          - name: DRIVERS_LICENSE_VERIFICATION_API_STATUS
+            value: "true"
+          - name: VOTERS_CARD_VERIFICATION_API_STATUS
+            value: "true"        
+          - name: SPECTA_API_KEY
+            valueFrom:
+              secretKeyRef:
+                 name: backend-new-secrets
+                 key: SPECTA_API_KEY
+          - name: SPECTA_MERCHANT_ID
+            valueFrom:
+              secretKeyRef:
+                 name: backend-new-secrets
+                 key: SPECTA_MERCHANT_ID
+          - name: WEBAPP_BASE_URL
+            valueFrom:
+              secretKeyRef:
+                 name: backend-new-secrets
+                 key: WEBAPP_BASE_URL
+          - name: ADMINAPP_BASE_URL
+            valueFrom:
+              secretKeyRef:
+                 name: backend-new-secrets
+                 key: ADMINAPP_BASE_URL
+          - name: REDIS_PORT
+            valueFrom:
+              secretKeyRef:
+                 name: backend-new-secrets
+                 key: REDIS_PORT
+          - name: REDIS_HOST
+            valueFrom:
+              secretKeyRef:
+                 name: backend-new-secrets
+                 key: REDIS_HOST     
+          - name: ALL_SPACES_CACHE_LIMIT
+            valueFrom:
+              secretKeyRef:
+                 name: backend-new-secrets
+                 key: ALL_SPACES_CACHE_LIMIT
+          - name: ALL_SPACES_CACHE_PAGE
+            valueFrom:
+              secretKeyRef:
+                 name: backend-new-secrets
+                 key: ALL_SPACES_CACHE_PAGE
+          - name: ADMIN_EMAIL
+            valueFrom:
+              secretKeyRef:
+                 name: backend-new-secrets
+                 key: ADMIN_EMAIL
+          - name: APPRUVE_ACCESS_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: backend-new-secrets
+                key: APPRUVE_ACCESS_TOKEN
+          - name: FLUTTERWAVE_TRANSACTION_FEE
+            valueFrom:
+              secretKeyRef:
+                 name: backend-new-secrets
+                 key: FLUTTERWAVE_TRANSACTION_FEE
+          - name: SERVER_ENV
+            value: "prod"
+          - name: NIN_VERIFICATION_API_STATUS
+            value: "false"
+          - name: CONFIGURE_BASE_URL
+            valueFrom:
+               secretKeyRef:
+                  name: backend-new-secrets
+                  key: CONFIGURE_BASE_URL
+          - name: CONFIGURE_ACCESS_TOKEN 
+            valueFrom:
+              secretKeyRef:
+                name: backend-new-secrets
+                key: CONFIGURE_ACCESS_TOKEN
+          - name: LOAN_PUBLIC_LOGIN_URL
+            valueFrom:
+              secretKeyRef:
+                name: backend-new-secrets
+                key: LOAN_PUBLIC_LOGIN_URL
+          - name: WITHHOLDING_TAX
+            valueFrom:
+              secretKeyRef:
+                name: backend-new-secrets
+                key: WITHHOLDING_TAX
+          - name: VAT
+            valueFrom:
+              secretKeyRef:
+                name: backend-new-secrets
+                key: VAT
+          - name: TERMII_API_KEY
+            valueFrom:
+              secretKeyRef:
+                name: backend-new-secrets
+                key: TERMII_API_KEY
+          - name: TERMII_SMS_SENDER_ID
+            valueFrom:
+              secretKeyRef:
+                name: backend-new-secrets
+                key: TERMII_SMS_SENDER_ID
+          - name: TERMII_BASE_URL
+            valueFrom:
+              secretKeyRef:
+                name: backend-new-secrets
+                key: TERMII_BASE_URL
+          - name: VERIFYTOKENEXPIRATIONTIME
+            valueFrom:
+              secretKeyRef:
+                name: backend-new-secrets
+                key: VERIFYTOKENEXPIRATIONTIME
+          - name: IDENTITYPASS_BASE_URL
+            valueFrom:
+              secretKeyRef:
+                name: backend-new-secrets
+                key: IDENTITYPASS_BASE_URL
+          - name: IDENTITYPASS_API_KEY
+            valueFrom:
+              secretKeyRef:
+                name: backend-new-secrets
+                key: IDENTITYPASS_API_KEY
+          - name: IDENTITYPASS_APP_ID
+            valueFrom:
+              secretKeyRef:
+                name: backend-new-secrets
+                key: IDENTITYPASS_APP_ID
+          - name: METAMAP_WEBHOOK_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: backend-new-secrets
+                key: METAMAP_WEBHOOK_SECRET
+          - name: CLOUDINARY_NAME
+            valueFrom:
+              secretKeyRef:
+                name: backend-new-secrets
+                key: CLOUDINARY_NAME
+          - name: CLOUDINARY_API_KEY
+            valueFrom:
+              secretKeyRef:
+                name: backend-new-secrets
+                key: CLOUDINARY_API_KEY
+          - name: CLODUINARY_API_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: backend-new-secrets
+                key: CLODUINARY_API_SECRET
+          - name: SPEKTRA_ACCOUNT_NAME
+            valueFrom:
+              secretKeyRef:
+                 name: backend-new-secrets
+                 key: SPEKTRA_ACCOUNT_NAME
+          - name: INTERCOM_ACCESS_TOKEN
+            valueFrom:
+              secretKeyRef:
+                 name: backend-new-secrets
+                 key: INTERCOM_ACCESS_TOKEN
+          - name: VERIFY_ADMIN_URL
+            valueFrom:
+              secretKeyRef:
+                 name: backend-new-secrets
+                 key: VERIFY_ADMIN_URL
+          - name: SERVER_ENV
+            valueFrom: 
+              secretKeyRef:
+                 name: backend-new-secrets
+                 key: SERVER_ENV
+          - name: DRIVERS_LICENSE_VERIFICATION_API_STATUS
+            valueFrom: 
+              secretKeyRef:
+                 name: backend-new-secrets
+                 key: DRIVERS_LICENSE_VERIFICATION_API_STATUS
+          - name: VOTERS_CARD_VERIFICATION_API_STATUS
+            valueFrom:
+              secretKeyRef:
+                 name: backend-new-secrets
+                 key: VOTERS_CARD_VERIFICATION_API_STATUS
+          - name: SERVICE_NAME
+            valueFrom:
+              secretKeyRef:
+                name: backend-new-secrets
+                key: SERVICE_NAME
+          - name: PROJECT_ID
+            valueFrom:
+              secretKeyRef:
+                name: backend-new-secrets
+                key: PROJECT_ID
+          - name: RESET_PASSWORD_LINK
+            valueFrom:
+              secretKeyRef:
+                name: backend-new-secrets
+                key: RESET_PASSWORD_LINK
+          - name: RNPL_WEBHOOK_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: backend-new-secrets
+                key: RNPL_WEBHOOK_TOKEN
+          - name: RENT_DEFAULT_SECURITY_DEPOSIT_PERCENTAGE
+            valueFrom:
+              secretKeyRef:
+                name: backend-new-secrets
+                key: RENT_DEFAULT_SECURITY_DEPOSIT_PERCENTAGE
+          - name: DAMAGES_SECURITY_DEPOSIT_PERCENTAGE
+            valueFrom:
+              secretKeyRef:
+                name: backend-new-secrets
+                key: DAMAGES_SECURITY_DEPOSIT_PERCENTAGE
+          - name: RNPL_URL
+            valueFrom:
+              secretKeyRef:
+                 name: backend-new-secrets
+                 key: RNPL_URL
+          - name: RNPL_PAYMENT_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: backend-new-secrets
+                key: RNPL_PAYMENT_TOKEN
+          - name: DEFAULT_BOOKING_FEE
+            valueFrom:
+              secretKeyRef:
+                name: backend-new-secrets
+                key: DEFAULT_BOOKING_FEE
+          - name: OKRA_URL
+            valueFrom:
+              secretKeyRef:
+                name: backend-new-secrets
+                key: OKRA_URL
+          - name: OKRA_SECRET_KEY
+            valueFrom:
+              secretKeyRef:
+                name: backend-new-secrets
+                key: OKRA_SECRET_KEY
+          - name: BANK_STATEMENT_PERIOD
+            valueFrom:
+              secretKeyRef:
+                name: backend-new-secrets
+                key: BANK_STATEMENT_PERIOD
+          - name: MONO_SECRET_KEY
+            valueFrom:
+              secretKeyRef:
+                name: backend-new-secrets
+                key: MONO_SECRET_KEY
+          - name: MONO_URL
+            valueFrom:
+              secretKeyRef:
+                name: backend-new-secrets
+                key: MONO_URL
+          - name: MONO_WEBHOOK_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: backend-new-secrets
+                key: MONO_WEBHOOK_SECRET 
+          - name: BUCKET_KEY_FILE
+            valueFrom:
+              secretKeyRef:
+                name: backend-new-secrets
+                key: BUCKET_KEY_FILE 
+          - name: GOOGLE_BUCKET_ID
+            valueFrom:
+              secretKeyRef:
+                name: backend-new-secrets
+                key: GOOGLE_BUCKET_ID                                            
+             
+          ports:
+          - containerPort: 3000
+            protocol: TCP
+          livenessProbe:
+            httpGet:
+             path: /v1/health-check
+             port: 3000
+            initialDelaySeconds: 400
+            periodSeconds: 30
+            failureThreshold: 4
+            TimeoutSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /v1/health-check
+              port: 3000
+            initialDelaySeconds: 400
+            periodSeconds: 30
+            failureThreshold: 4
+            TimeoutSeconds: 10
+#           resources:
+#            limits:
+#               cpu: 900m
+#               memory: 900Mi
+#            requests:
+#               cpu: 200m
+#               memory: 300Mi
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          imagePullPolicy: Always
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      dnsPolicy: ClusterFirst
+      securityContext: {}
+      imagePullSecrets:
+        - name: regcred
+      schedulerName: default-scheduler
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 25%
+      maxSurge: 25%
+  revisionHistoryLimit: 10
+  progressDeadlineSeconds: 600
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prod-backend
+  namespace: prod
+  labels:
+    app: prod-backend
+    service: prod-backend
+spec:
+  ports:
+  - port: 3000
+    name: http
+  selector:
+    app: prod-backend
+ 
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: prod-backend
+  namespace: prod
+  annotations:
+    nginx.ingress.kubernetes.io/default-backend: ingress-nginx-controller
+    kubernetes.io/ingress.class: nginx 
+    ## tells ingress to check for regex in the config file
+    nginx.ingress.kubernetes.io/use-regex: 'true'
+    nginx.ingress.kubernetes.io/enable-cors: 'true'
+    nginx.ingress.kubernetes.io/cors-allow-methods: "PUT, GET, POST, PATCH, OPTIONS, DELETE"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "*"
+spec:
+  rules:
+  - host: "api-prod.spleet.africa"
+    http:
+      paths:
+      - pathType: Prefix
+        path: "/"
+        backend:
+          service:
+            name: prod-backend
+            port:
+              number: 3000
+
+
+
+
+#manifest script for frontend manifest
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: newfrontend-prod
+  namespace: prod
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: newfrontend-prod
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: newfrontend-prod
+    spec:
+      containers:
+        - name: newfrontend-prod
+          image: spleet/newfrontend-prod:30-a6af4be8c3b4fe0dacf90e2b6d9226cd09d62ce1
+          env:
+          - name: BASE_URL
+            valueFrom:
+              secretKeyRef:
+                name: frontend-secrets
+                key: BASE_URL
+          - name: CLOUDINARY_URL
+            valueFrom:
+              secretKeyRef:
+                name: frontend-secrets
+                key: CLOUDINARY_URL
+          - name: CLOUDINARY_PRESET
+            valueFrom: 
+             secretKeyRef:
+               name: frontend-secrets
+               key: CLOUDINARY_PRESET
+          - name: GOOGLE_CLIENT_ID
+            valueFrom:
+             secretKeyRef:
+               name: frontend-secrets
+               key: GOOGLE_CLIENT_ID
+          - name: PAYSTACK_PUBLIC
+            valueFrom:
+              secretKeyRef:
+                name: frontend-secrets
+                key: PAYSTACK_PUBLIC
+          - name: FLUTTERWAVE_PUBLIC
+            valueFrom:
+              secretKeyRef:
+                name: frontend-secrets
+                key: FLUTTERWAVE_PUBLIC
+          - name: CONFIGURE_LOGIN
+            valueFrom:
+              secretKeyRef:
+                name: frontend-secrets
+                key: CONFIGURE_LOGIN
+          - name: EMAIL_VERIFICATION_PAGE
+            valueFrom:
+              secretKeyRef:
+                name: frontend-secrets
+                key: EMAIL_VERIFICATION_PAGE
+          - name: FORGET_PASSWORD_PAGE
+            valueFrom:
+              secretKeyRef:
+                name: frontend-secrets
+                key: FORGET_PASSWORD_PAGE
+          - name: VERIFY_CALLBACKURL
+            valueFrom:
+              secretKeyRef:
+                name: frontend-secrets
+                key: VERIFY_CALLBACKURL
+          - name: GOOGLE_MAP_KEY
+            valueFrom: 
+              secretKeyRef:
+                name: frontend-secrets
+                key: GOOGLE_MAP_KEY
+          - name: METAMAP_CLIENT_ID
+            valueFrom: 
+              secretKeyRef:
+                name: frontend-secrets
+                key: METAMAP_CLIENT_ID
+          - name: METAMAP_FLOW_ID
+            valueFrom: 
+              secretKeyRef:
+                name: frontend-secrets
+                key: METAMAP_FLOW_ID
+          - name: GOOGLE_ANALYTICS_ID
+            valueFrom: 
+              secretKeyRef:
+                name: frontend-secrets
+                key: GOOGLE_ANALYTICS_ID
+          - name: RNPL_BASE_URL
+            valueFrom: 
+              secretKeyRef:
+                name: frontend-secrets
+                key: RNPL_BASE_URL
+          - name: OKRA_KEY
+            valueFrom: 
+              secretKeyRef:
+                name: frontend-secrets
+                key: OKRA_KEY
+          - name: OKRA_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: frontend-secrets
+                key: OKRA_TOKEN
+          - name: OKRA_NAME
+            valueFrom:
+              secretKeyRef:
+                name: frontend-secrets
+                key: OKRA_NAME
+          - name: OKRA_ENV
+            valueFrom:
+              secretKeyRef:
+                name: frontend-secrets
+                key: OKRA_ENV
+          - name: IS_DEV
+            valueFrom:
+              secretKeyRef:
+                name: frontend-secrets
+                key: IS_DEV
+          - name: PUBLIC_DOMAIN
+            valueFrom:
+              secretKeyRef:
+                name: frontend-secrets
+                key: PUBLIC_DOMAIN 
+          - name: DOMAIN
+            valueFrom:
+              secretKeyRef:
+                name: frontend-secrets
+                key: DOMAIN      
+
+          ports:
+          - containerPort: 80
+            protocol: TCP
+          # livenessProbe:
+          #   httpGet:
+          #     path: /
+          #     port: 80
+          #   initialDelaySeconds: 100
+          #   periodSeconds: 240
+          #   failureThreshold: 5
+          # readinessProbe:
+          #   httpGet:
+          #     path: /
+          #     port: 80
+          #   initialDelaySeconds: 100
+          #   periodSeconds: 5
+          #   timeoutSeconds: 3
+          #   successThreshold: 1
+          
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          imagePullPolicy: Always
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      dnsPolicy: ClusterFirst
+      securityContext: {}
+      imagePullSecrets:
+        - name: regcred
+      schedulerName: default-scheduler
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 25%
+      maxSurge: 25%
+  revisionHistoryLimit: 10
+  progressDeadlineSeconds: 600
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: newfrontend-prod
+  namespace: prod
+  labels:
+    app: newfrontend-prod
+    service: newfrontend-prod
+spec:
+  ports:
+  - port: 80
+    name: http
+  selector:
+    app: newfrontend-prod
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: newfrontend-prod
+  namespace: prod
+  annotations:
+    nginx.ingress.kubernetes.io/default-backend: ingress-nginx-controller
+    kubernetes.io/ingress.class: nginx 
+    ## tells ingress to check for regex in the config file
+    nginx.ingress.kubernetes.io/use-regex: 'true'
+    nginx.ingress.kubernetes.io/enable-cors: 'true'
+    nginx.ingress.kubernetes.io/cors-allow-methods: "PUT, GET, POST, PATCH, OPTIONS, DELETE"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "*"
+    nginx.ingress.kubernetes.io/cors-max-age: "600"
+#     nginx.ingress.kubernetes.io/configuration-snippet: |
+#     more_set_headers "Access-Control-Allow-Origin: $http_origin";
+    #certmanager.k8s.io/cluster-issuer: letsencrypt
+#     kubernetes.io/ingress.class: nginx
+#     service.beta.kubernetes.io/do-loadbalancer-enable-proxy-protocol: "true"
+
+spec:
+  rules:
+  - host: "dashboard.spleet.africa"
+    http:
+      paths:
+      - pathType: Prefix
+        path: "/"
+        backend:
+          service:
+            name: newfrontend-prod
+            port:
+              number: 80
+
+
+
+#manifest script for rnpl manifest
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rnpl-backend
+  namespace: rnpl
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rnpl-backend
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: rnpl-backend
+    spec:
+      volumes:
+       - name: rnplbucketupload
+         secret:
+           secretName: rnpl-prod-statement-upload
+      
+      containers:
+        - name: rnpl-backend
+          image: spleet/rnpl-prod:9-7e2762dd5052454fb54fd188139bc81fa4d06b29
+          volumeMounts:
+            - name: rnplbucketupload
+              mountPath: /app/rnplbucketupload
+          env:
+          - name: ADMINAPP_BASE_URL
+            valueFrom:
+              secretKeyRef:
+                name: rnpl-secrets
+                key: ADMINAPP_BASE_URL
+          - name: APPRUVE_ACCESS_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: rnpl-secrets
+                key: APPRUVE_ACCESS_TOKEN
+          - name: APPRUVE_URL
+            valueFrom:
+              secretKeyRef:
+                name: rnpl-secrets
+                key: APPRUVE_URL
+          - name: BANK_STATEMENT_PERIOD
+            valueFrom:
+              secretKeyRef:
+                name: rnpl-secrets
+                key: BANK_STATEMENT_PERIOD      
+          - name: CLOUDINARY_API_KEY
+            valueFrom:
+              secretKeyRef:
+                name: rnpl-secrets
+                key: CLOUDINARY_API_KEY
+          - name: CLOUDINARY_API_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: rnpl-secrets
+                key: CLOUDINARY_API_SECRET
+          - name: CLOUDINARY_NAME
+            valueFrom:
+              secretKeyRef:
+                name: rnpl-secrets
+                key: CLOUDINARY_NAME
+          - name: DATABASE_HOST
+            valueFrom:
+              secretKeyRef:
+                name: rnpl-secrets
+                key: DATABASE_HOST
+          - name: DATABASE_NAME
+            valueFrom:
+              secretKeyRef:
+                name: rnpl-secrets
+                key: DATABASE_NAME
+          - name: DATABASE_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: rnpl-secrets
+                key: DATABASE_PASSWORD
+          - name: DATABASE_PORT
+            valueFrom:
+              secretKeyRef:
+                name: rnpl-secrets
+                key: DATABASE_PORT
+          - name: DATABASE_TYPE
+            valueFrom:
+              secretKeyRef:
+                name: rnpl-secrets
+                key: DATABASE_TYPE
+          - name: DATABASE_USERNAME
+            valueFrom:
+              secretKeyRef:
+                name: rnpl-secrets
+                key: DATABASE_USERNAME
+          - name: DEV_URL
+            valueFrom: 
+              secretKeyRef:
+                name: rnpl-secrets
+                key: DEV_URL      
+          - name: ENCRYPTION_ALGORITHM
+            valueFrom:
+              secretKeyRef:
+                name: rnpl-secrets
+                key: ENCRYPTION_ALGORITHM
+          - name: ENCRYPTION_IV
+            valueFrom:
+              secretKeyRef:
+                name: rnpl-secrets
+                key: ENCRYPTION_IV
+          - name: ENCRYPTION_KEY
+            valueFrom:
+              secretKeyRef:
+                name: rnpl-secrets
+                key: ENCRYPTION_KEY
+          - name: ENCRYPTION_SALT
+            valueFrom: 
+              secretKeyRef:
+                name: rnpl-secrets
+                key: ENCRYPTION_SALT                   
+          - name: IDENTITY_PASS_BASE_URL
+            valueFrom:
+              secretKeyRef:
+                name: rnpl-secrets
+                key: IDENTITY_PASS_BASE_URL
+          - name: JWT_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: rnpl-secrets
+                key: JWT_SECRET
+          - name: MANDRILL_SECRET_KEY
+            valueFrom: 
+              secretKeyRef: 
+                name: rnpl-secrets
+                key: MANDRILL_SECRET_KEY      
+          - name: MARKETPLACE_URL
+            valueFrom:
+              secretKeyRef:
+                name: rnpl-secrets
+                key: MARKETPLACE_URL
+          - name: PAYMENT_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: rnpl-secrets
+                key: PAYMENT_TOKEN                 
+          - name: PERICULUM_CLIENT_ID
+            valueFrom:
+              secretKeyRef:
+                name: rnpl-secrets
+                key: PERICULUM_CLIENT_ID
+          - name: PERICULUM_CLIENT_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: rnpl-secrets
+                key: PERICULUM_CLIENT_SECRET
+          - name: PERICULUM_TOKEN_URL
+            valueFrom:
+              secretKeyRef:
+                name: rnpl-secrets
+                key: PERICULUM_TOKEN_URL
+          - name: PERICULUM_URL
+            valueFrom:
+              secretKeyRef:
+                name: rnpl-secrets
+                key: PERICULUM_URL
+          - name: PORT 
+            valueFrom: 
+              secretKeyRef: 
+                name: rnpl-secrets
+                key: PORT      
+          - name: REDIS_HOST
+            valueFrom:
+              secretKeyRef:
+                 name: rnpl-secrets
+                 key: REDIS_HOST
+          - name: REDIS_PORT
+            valueFrom:
+              secretKeyRef:
+                name: rnpl-secrets
+                key: REDIS_PORT
+          - name: SERVER_ENV
+            valueFrom: 
+              secretKeyRef: 
+                name: rnpl-secrets
+                key: SERVER_ENV       
+          - name: TERMII_API_KEY
+            valueFrom:
+              secretKeyRef:
+                name: rnpl-secrets
+                key: TERMII_API_KEY
+          - name: TERMII_SENDER_ID
+            valueFrom:
+              secretKeyRef:
+                name: rnpl-secrets
+                key: TERMII_SENDER_ID
+          - name: TERMII_URL
+            valueFrom:
+              secretKeyRef:
+                name: rnpl-secrets
+                key: TERMII_URL  
+          - name: TOKEN_EXPIRATION_TIME
+            valueFrom:
+              secretKeyRef:
+                name: rnpl-secrets
+                key: TOKEN_EXPIRATION_TIME
+          - name: WEBHOOK_TOKEN
+            valueFrom:
+               secretKeyRef:
+                 name: rnpl-secrets
+                 key: WEBHOOK_TOKEN 
+          - name: VFD_BASE_URL
+            valueFrom:
+               secretKeyRef:
+                 name: rnpl-secrets
+                 key: VFD_BASE_URL
+          - name: VFD_KEY
+            valueFrom:
+               secretKeyRef:
+                 name: rnpl-secrets
+                 key: VFD_KEY
+          - name: VFD_WALLET_CREDENTIAL 
+            valueFrom:
+               secretKeyRef:
+                 name: rnpl-secrets
+                 key: VFD_WALLET_CREDENTIAL
+          - name: BANK_ACCOUNT_ROUTE
+            valueFrom:
+               secretKeyRef:
+                 name: rnpl-secrets
+                 key: BANK_ACCOUNT_ROUTE
+          - name: SPLEET_RECOVA_TOKEN
+            valueFrom:
+               secretKeyRef:
+                 name: rnpl-secrets
+                 key: SPLEET_RECOVA_TOKEN
+          - name: INSTITUTION_CODE
+            valueFrom:
+               secretKeyRef:
+                 name: rnpl-secrets
+                 key: INSTITUTION_CODE
+          - name: RECOVA_BASE_URL
+            valueFrom:
+               secretKeyRef:
+                 name: rnpl-secrets
+                 key: RECOVA_BASE_URL
+          - name: RECOVA_DIRECT_DEBIT_TOKEN
+            valueFrom:
+               secretKeyRef:
+                 name: rnpl-secrets
+                 key: RECOVA_DIRECT_DEBIT_TOKEN
+          - name: SPLEET_VFD_ACCOUNT_DETAILS_ID
+            valueFrom:
+              secretKeyRef:
+                name: rnpl-secrets
+                key: SPLEET_VFD_ACCOUNT_DETAILS_ID
+          - name: IDENTITY_PASS_APP_ID
+            valueFrom:
+              secretKeyRef:
+                name: rnpl-secrets
+                key: IDENTITY_PASS_APP_ID
+          - name: IDENTITY_PASS_APP_KEY
+            valueFrom:
+              secretKeyRef:
+                name: rnpl-secrets
+                key: IDENTITY_PASS_APP_KEY
+          - name: IDENTITY_PASS_SECRET_KEY
+            valueFrom:
+              secretKeyRef:
+                name: rnpl-secrets
+                key: IDENTITY_PASS_SECRET_KEY
+          - name: OKRA_URL
+            valueFrom:
+              secretKeyRef:
+                name: rnpl-secrets
+                key: OKRA_URL
+          - name: OKRA_SECRET_KEY
+            valueFrom:
+              secretKeyRef:
+                name: rnpl-secrets
+                key: OKRA_SECRET_KEY
+          - name: VFD_AUTH_TOKEN
+            valueFrom:
+               secretKeyRef:
+                  name: rnpl-secrets
+                  key: VFD_AUTH_TOKEN
+          - name: METAMAP_WEBHOOK_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: rnpl-secrets
+                key: METAMAP_WEBHOOK_SECRET
+          - name: VFD_IP_ADDRESS
+            valueFrom:
+              secretKeyRef:
+                name: rnpl-secrets
+                key: VFD_IP_ADDRES   
+          - name: MONO_URL
+            valueFrom:
+              secretKeyRef:
+                name: rnpl-secrets
+                key: MONO_URL
+          - name: MONO_SECRET_KEY
+            valueFrom:
+              secretKeyRef:
+                name: rnpl-secrets
+                key: MONO_SECRET_KEY
+          - name: MONO_WEBHOOK_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: rnpl-secrets
+                key: MONO_WEBHOOK_SECRET
+          - name: GCP_PROJECT_ID
+            valueFrom:
+              secretKeyRef:
+                name: rnpl-secrets
+                key: GCP_PROJECT_ID 
+          - name: GOOGLE_BUCKET_ID
+            valueFrom:
+              secretKeyRef:
+                name: rnpl-secrets
+                key: GOOGLE_BUCKET_ID
+          - name: SPLEET_FRONTEND_URL
+            valueFrom:
+              secretKeyRef:
+                name: rnpl-secrets
+                key: SPLEET_FRONTEND_URL                  
+          
+
+          ports:
+          - containerPort: 4000
+            protocol: TCP
+          livenessProbe:
+            httpGet:
+             path: /v1/health-check
+             port: 4000
+            initialDelaySeconds: 5
+            periodSeconds: 45
+            failureThreshold: 5
+          readinessProbe:
+            httpGet:
+              path: /v1/health-check
+              port: 4000
+            initialDelaySeconds: 5
+            periodSeconds: 45
+          
+          terminationMessagePath: /rnpl/termination-log
+          terminationMessagePolicy: File
+          imagePullPolicy: Always
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      dnsPolicy: ClusterFirst
+      securityContext: {}
+      imagePullSecrets:
+        - name: regcred
+      schedulerName: default-scheduler
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 25%
+      maxSurge: 25%
+  revisionHistoryLimit: 10
+  progressDeadlineSeconds: 600
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rnpl-backend
+  namespace: rnpl
+  labels:
+    app: rnpl-backend
+    service: rnpl-backend
+spec:
+  ports:
+  - port: 4000
+    name: http
+  selector:
+    app: rnpl-backend
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: rnpl-backend
+  namespace: rnpl
+  annotations:
+    nginx.ingress.kubernetes.io/default-backend: ingress-nginx-controller
+    kubernetes.io/ingress.class: nginx 
+    ## tells ingress to check for regex in the config file
+    nginx.ingress.kubernetes.io/use-regex: 'true'
+    nginx.ingress.kubernetes.io/enable-cors: 'true'
+    nginx.ingress.kubernetes.io/cors-allow-methods: "PUT, GET, POST, PATCH, OPTIONS, DELETE"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "*"
+    nginx.ingress.kubernetes.io/cors-max-age: "600"
+#     nginx.ingress.kubernetes.io/configuration-snippet: |
+#     more_set_headers "Access-Control-Allow-Origin: $http_origin";
+    #certmanager.k8s.io/cluster-issuer: letsencrypt
+#     kubernetes.io/ingress.class: nginx
+#     service.beta.kubernetes.io/do-loadbalancer-enable-proxy-protocol: "true"
+
+spec:
+  rules:
+  - host: "rnpl.spleet.africa"
+    http:
+      paths:
+      - pathType: Prefix
+        path: "/"
+        backend:
+          service:
+            name: rnpl-backend
+            port:
+              number: 4000

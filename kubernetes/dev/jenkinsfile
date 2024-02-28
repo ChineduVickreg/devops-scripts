@@ -1,0 +1,520 @@
+def notifyUsers(){
+    if (currentBuild.currentResult == 'SUCCESS') {
+    def message = "@here PUBLIC Manifest Build <${env.BUILD_URL}|${currentBuild.displayName}> " +
+        "${currentBuild.currentResult} Manifest has been deployed to Kubernetes"
+    slackSend(message: message, channel: '#pipeline-notifications', color: 'good', token: 'slack-notification')
+} else {
+     if (currentBuild.currentResult == 'FAILURE') {
+    def message = "@here PUBLIC Manifest Build <${env.BUILD_URL}|${currentBuild.displayName}> " +
+        "${currentBuild.currentResult} Manifest has NOT been deployed to Kubernetes"
+    slackSend(message: message, channel: '#pipeline-notifications', color: 'danger', token: 'slack-notification')
+}
+}
+}
+pipeline {
+  agent {
+    kubernetes {
+      yaml '''
+        apiVersion: v1
+        kind: Pod
+        spec:
+          containers:
+          - name: node
+            image: node:16
+            command:
+            - cat
+            tty: true
+          - name: docker
+            image: docker:latest
+            command:
+            - cat
+            tty: true
+            volumeMounts:
+             - mountPath: /var/run/docker.sock
+               name: docker-sock
+          volumes:
+          - name: docker-sock
+            hostPath:
+              path: /var/run/docker.sock    
+        '''
+    }
+  }
+   environment {
+        // NAME = "newfrontend-dev"
+        // VERSION = "${env.BUILD_ID}-${env.GIT_COMMIT}"
+        // IMAGE_REPO = "spleet"
+        // ARGOCD_TOKEN = credentials("argocd-deploy-role")
+        //GITLAB_TOKEN = credentials("newest-token-gitlab")
+        USERNAME = "Maduabuchi"
+    }
+  stages {
+    stage('Clone') {
+      steps {
+        container('node') {
+         checkout([$class: 'GitSCM',
+             branches: [[name: '*/dev']], 
+             doGenerateSubmoduleConfigurations: false, 
+             extensions: [], submoduleCfg: [], 
+             userRemoteConfigs: [[credentialsId: 'github', 
+             url: 'https://github.com/spleet-africa/public-manifests.git']]])
+        sh "ls -a"
+        // sh 'sed -i "s/<VERSION>/${VERSION}/g" frontend/dev/dev.yaml'
+        sh 'sed -i "s+spleet/spleet-public-frontend-dev.*+spleet/spleet-public-frontend-dev:${VERSION}+g" dev/app/deploy.yaml'
+        sh 'git config --global user.name "maduflavins"'
+        sh 'git config --globa user.email "maduabuchiokonkwo@gmail.com"'
+        sh 'git config --global --add safe.directory /home/jenkins/agent/workspace/public-dev-manifest'
+        sh "git add -A"
+        sh 'git status'
+         withVault(configuration: [timeout: 60, vaultCredentialId: 'vaulted', vaultUrl: 'https://vault.spleet.dev'], vaultSecrets: [[path: 'credentials/jenkins', secretValues: [[vaultKey: 'GITHUB_PASSWORD']]]]) {
+          sh  'git remote set-url origin https://Maduflavins:${GITHUB_PASSWORD}@github.com/spleet-africa/public-manifests.git'
+          sh 'git commit -m "updating image version"'
+          echo "pushing....."
+          sh 'git push https://Maduflavins:${GITHUB_PASSWORD}@github.com/spleet-africa/public-manifests.git HEAD:dev'
+          
+        } 
+       
+
+        }
+      }
+    }
+    stage ('Notify') {
+      steps{
+        notifyUsers()
+      }
+    }
+  }
+}       
+
+
+
+
+
+====================================================================================
+#jenkinsfile for backend manifest
+
+def notifyUsers(){
+    if (currentBuild.currentResult == 'SUCCESS') {
+    def message = "@here Backend Manifest Build <${env.BUILD_URL}|${currentBuild.displayName}> " +
+        "${currentBuild.currentResult} Manifest has been deployed to Kubernetes"
+    slackSend(message: message, channel: '#jenkins-pipeline', color: 'good', token: 'slack-notification')
+} else {
+     if (currentBuild.currentResult == 'FAILURE') {
+    def message = "@here Build <${env.BUILD_URL}|${currentBuild.displayName}> " +
+        "${currentBuild.currentResult} Manifest has NOT been deployed to Kubernetes"
+    slackSend(message: message, channel: '#spleetafrica', color: 'danger', token: 'slack-notification')
+}
+}
+}
+pipeline {
+  agent {
+    kubernetes {
+      yaml '''
+        apiVersion: v1
+        kind: Pod
+        spec:
+          containers:
+          - name: node
+            image: node:16
+            command:
+            - cat
+            tty: true
+          - name: docker
+            image: docker:latest
+            command:
+            - cat
+            tty: true
+            volumeMounts:
+             - mountPath: /var/run/docker.sock
+               name: docker-sock
+          volumes:
+          - name: docker-sock
+            hostPath:
+              path: /var/run/docker.sock    
+        '''
+    }
+  }
+   environment {
+        // NAME = "newfrontend-dev"
+        // VERSION = "${env.BUILD_ID}-${env.GIT_COMMIT}"
+        // IMAGE_REPO = "spleet"
+        // ARGOCD_TOKEN = credentials("argocd-deploy-role")
+        //GITLAB_TOKEN = credentials("newest-token-gitlab")
+        USERNAME = "Maduabuchi"
+    }
+  stages {
+    stage('Clone') {
+      steps {
+        container('node') {
+         checkout([$class: 'GitSCM',
+             branches: [[name: '*/dev']], 
+             doGenerateSubmoduleConfigurations: false, 
+             extensions: [], submoduleCfg: [], 
+             userRemoteConfigs: [[credentialsId: 'github', 
+             url: 'https://github.com/spleet-africa/backend-manifests.git']]])
+        sh "ls -a"
+        // sh 'sed -i "s/<VERSION>/${VERSION}/g" frontend/dev/dev.yaml'
+        sh 'sed -i "s+spleet/backend-dev-app.*+spleet/backend-dev-app:${VERSION}+g" dev/app/deploy.yaml'
+        sh 'git config --global user.name "maduflavins"'
+        sh 'git config --globa user.email "maduabuchiokonkwo@gmail.com"'
+        sh 'git config --global --add safe.directory /home/jenkins/agent/workspace/backend-dev-manifest'
+        sh "git add -A"
+        sh 'git status'
+         withVault(configuration: [timeout: 60, vaultCredentialId: 'vaulted', vaultUrl: 'https://vault.spleet.dev'], vaultSecrets: [[path: 'credentials/jenkins', secretValues: [[vaultKey: 'GITHUB_PASSWORD']]]]) {
+          sh  'git remote set-url origin https://Maduflavins:${GITHUB_PASSWORD}@github.com/spleet-africa/backend-manifests.git'
+          sh 'git commit -m "updating image version"'
+          echo "pushing....."
+          sh 'git push https://Maduflavins:${GITHUB_PASSWORD}@github.com/spleet-africa/backend-manifests.git HEAD:dev'
+          
+        } 
+       
+
+        }
+      }
+    }
+    stage ('Notify') {
+      steps{
+        notifyUsers()
+      }
+    }    
+
+  }
+}
+
+
+
+====================================================================================
+#jenkinsfile for frontend manifest
+
+def notifyUsers(){
+    if (currentBuild.currentResult == 'SUCCESS') {
+    def message = "@here FRONTEND Manifest Build <${env.BUILD_URL}|${currentBuild.displayName}> " +
+        "${currentBuild.currentResult} Manifest has been deployed to Kubernetes"
+    slackSend(message: message, channel: '#pipeline-notifications', color: 'good', token: 'slack-notification')
+} else {
+     if (currentBuild.currentResult == 'FAILURE') {
+    def message = "@here Build <${env.BUILD_URL}|${currentBuild.displayName}> " +
+        "${currentBuild.currentResult} Manifest has NOT been deployed to Kubernetes"
+    slackSend(message: message, channel: '#pipeline-notifications', color: 'danger', token: 'slack-notification')
+}
+}
+}
+pipeline {
+  agent {
+    kubernetes {
+      yaml '''
+        apiVersion: v1
+        kind: Pod
+        spec:
+          containers:
+          - name: node
+            image: node:16
+            command:
+            - cat
+            tty: true
+          - name: docker
+            image: docker:latest
+            command:
+            - cat
+            tty: true
+            volumeMounts:
+             - mountPath: /var/run/docker.sock
+               name: docker-sock
+          volumes:
+          - name: docker-sock
+            hostPath:
+              path: /var/run/docker.sock    
+        '''
+    }
+  }
+   environment {
+        // NAME = "newfrontend-dev"
+        // VERSION = "${env.BUILD_ID}-${env.GIT_COMMIT}"
+        // IMAGE_REPO = "spleet"
+        // ARGOCD_TOKEN = credentials("argocd-deploy-role")
+        //GITLAB_TOKEN = credentials("newest-token-gitlab")
+        USERNAME = "Maduabuchi"
+    }
+  stages {
+    stage('Clone') {
+      steps {
+        container('node') {
+         checkout([$class: 'GitSCM',
+             branches: [[name: '*/dev']], 
+             doGenerateSubmoduleConfigurations: false, 
+             extensions: [], submoduleCfg: [], 
+             userRemoteConfigs: [[credentialsId: 'github', 
+             url: 'https://github.com/spleet-africa/frontend-manifests.git']]])
+        sh "ls -a"
+        // sh 'sed -i "s/<VERSION>/${VERSION}/g" frontend/dev/dev.yaml'
+        sh 'sed -i "s+spleet/newfrontend-dev.*+spleet/newfrontend-dev:${VERSION}+g" dev/app/deploy.yaml'
+        sh 'git config --global user.name "maduflavins"'
+        sh 'git config --globa user.email "maduabuchiokonkwo@gmail.com"'
+        sh 'git config --global --add safe.directory /home/jenkins/agent/workspace/frontend-dev-manifest'
+        sh "git add -A"
+        sh 'git status'
+         withVault(configuration: [timeout: 60, vaultCredentialId: 'vaulted', vaultUrl: 'https://vault.spleet.dev'], vaultSecrets: [[path: 'credentials/jenkins', secretValues: [[vaultKey: 'GITHUB_PASSWORD']]]]) {
+          sh  'git remote set-url origin https://Maduflavins:${GITHUB_PASSWORD}@github.com/spleet-africa/frontend-manifests.git'
+          sh 'git commit -m "updating image version"'
+          echo "pushing....."
+          sh 'git push https://Maduflavins:${GITHUB_PASSWORD}@github.com/spleet-africa/frontend-manifests.git HEAD:dev'
+          
+        } 
+       
+
+        }
+      }
+    }
+    stage ('Notify') {
+      steps{
+        notifyUsers()
+      }
+    }   
+
+  }
+}
+
+
+====================================================================================
+#jenkinsfile for rnpl manifest
+
+def notifyUsers(){
+    if (currentBuild.currentResult == 'SUCCESS') {
+    def message = "@here RNPL Manifest Build <${env.BUILD_URL}|${currentBuild.displayName}> " +
+        "${currentBuild.currentResult} Manifest has been deployed to Kubernetes"
+    slackSend(message: message, channel: '#pipeline-notifications', color: 'good', token: 'slack-notification')
+} else {
+    if (currentBuild.currentResult == 'FAILURE') {
+    def message = "@here Build <${env.BUILD_URL}|${currentBuild.displayName}> " +
+        "${currentBuild.currentResult} Manifest has NOT been deployed to Kubernetes"
+    slackSend(message: message, channel: '#pipeline-notifications', color: 'danger', token: 'slack-notification')
+}
+}
+}
+pipeline {
+  agent {
+    kubernetes {
+      yaml '''
+        apiVersion: v1
+        kind: Pod
+        spec:
+          containers:
+          - name: node
+            image: node:16
+            command:
+            - cat
+            tty: true
+          - name: docker
+            image: docker:latest
+            command:
+            - cat
+            tty: true
+            volumeMounts:
+             - mountPath: /var/run/docker.sock
+               name: docker-sock
+          volumes:
+          - name: docker-sock
+            hostPath:
+              path: /var/run/docker.sock    
+        '''
+    }
+  }
+  stages {
+    stage('Clone') {
+      steps {
+        container('node') {
+         checkout([$class: 'GitSCM',
+             branches: [[name: '*/dev']], 
+             doGenerateSubmoduleConfigurations: false, 
+             extensions: [], submoduleCfg: [], 
+             userRemoteConfigs: [[credentialsId: 'github', 
+             url: 'https://github.com/spleet-africa/rnpl-manifests.git']]])
+        sh "ls -a"
+        // sh 'sed -i "s/<VERSION>/${VERSION}/g" frontend/dev/dev.yaml'
+        sh 'sed -i "s+spleet/backend-dev-rnpl.*+spleet/backend-dev-rnpl:${VERSION}+g" dev/app/deploy.yaml'
+        sh 'git config --global user.name "maduflavins"'
+        sh 'git config --globa user.email "maduabuchiokonkwo@gmail.com"'
+        sh 'git config --global --add safe.directory /home/jenkins/agent/workspace/rnpl-dev-manifest'
+        sh "git add -A"
+        sh 'git status'
+        
+       withVault(configuration: [timeout: 60, vaultCredentialId: 'vaulted', vaultUrl: 'https://vault.spleet.dev'], vaultSecrets: [[path: 'credentials/jenkins', secretValues: [[vaultKey: 'GITHUB_PASSWORD']]]]) {
+        sh  'git remote set-url origin https://Maduflavins:${GITHUB_PASSWORD}@github.com/spleet-africa/rnpl-manifests.git'
+        sh 'git commit -m "updating image version"'
+        echo "pushing....."
+        sh 'git push https://Maduflavins:${GITHUB_PASSWORD}@github.com/spleet-africa/rnpl-manifests.git HEAD:dev'
+          
+        } 
+        
+
+        }
+      }
+    }
+    stage ('Notify') {
+      steps{
+        notifyUsers()
+      }
+    }  
+
+  }
+}
+
+
+====================================================================================
+#jenkinsfile for  admin manifest
+
+def notifyUsers(){
+    if (currentBuild.currentResult == 'SUCCESS') {
+    def message = "@here Build <${env.BUILD_URL}|${currentBuild.displayName}> " +
+        "${currentBuild.currentResult} Image has been deployed to DockerHub"
+    slackSend(message: message, channel: '#jenkins-pipeline', color: 'good', token: 'slack-notification')
+} else {
+    def message = "@here Build <${env.BUILD_URL}|${currentBuild.displayName}> " +
+        "${currentBuild.currentResult} Image has been deployed to DockerHub"
+    slackSend(message: message, channel: '#spleetafrica', color: 'danger', token: 'slack-notification')
+}
+}
+pipeline {
+  agent {
+    kubernetes {
+      yaml '''
+        apiVersion: v1
+        kind: Pod
+        spec:
+          containers:
+          - name: node
+            image: node:16
+            command:
+            - cat
+            tty: true
+          - name: docker
+            image: docker:latest
+            command:
+            - cat
+            tty: true
+            volumeMounts:
+             - mountPath: /var/run/docker.sock
+               name: docker-sock
+          volumes:
+          - name: docker-sock
+            hostPath:
+              path: /var/run/docker.sock    
+        '''
+    }
+  }
+  stages {
+    stage('Clone') {
+      steps {
+        container('node') {
+         checkout([$class: 'GitSCM',
+             branches: [[name: '*/dev']], 
+             doGenerateSubmoduleConfigurations: false, 
+             extensions: [], submoduleCfg: [], 
+             userRemoteConfigs: [[credentialsId: 'github', 
+             url: 'https://github.com/spleet-africa/admin-manifests.git']]])
+        sh "ls -a"
+        // sh 'sed -i "s/<VERSION>/${VERSION}/g" frontend/dev/dev.yaml'
+        sh 'sed -i "s+spleet/admin-front-end.*+spleet/admin-front-end:${VERSION}+g" app/dev/deploy.yaml'
+        sh 'git config --global user.name "maduflavins"'
+        sh 'git config --globa user.email "maduabuchiokonkwo@gmail.com"'
+        sh 'git config --global --add safe.directory /home/jenkins/agent/workspace/admin-dev-manifest'
+        sh "git add -A"
+        sh 'git status'
+        // withVault(configuration: [timeout: 60, vaultCredentialId: 'vault', vaultUrl: 'https://vault.spleet.dev'], vaultSecrets: [[path: 'credentials/jenkins', secretValues: [[vaultKey: 'GITHUB_PASSWORD']]]]) {
+        //   sh  'git remote set-url origin https://maduflavins:${GIHUB_PASSWORD}@github.com/spleet-africa/admin-manifests.git'
+        //   sh 'git commit -m "updating image version"'
+        //   echo "pushing....."
+        //   sh 'git push https://maduflavins:${GIHUB_PASSWORD}@github.com/spleet-africa/admin-manifests.git HEAD:dev'
+          
+        // } 
+        https://github.com/spleet-africa/admin-manifests.git
+        
+       withVault(configuration: [timeout: 60, vaultCredentialId: 'vault', vaultUrl: 'https://vault.spleet.dev'], vaultSecrets: [[path: 'credentials/jenkins', secretValues: [[vaultKey: 'GITHUB_PASSWORD']]]]) {
+        echo "credentials: $GITHUB_PASSWORD"
+        sh  'git remote set-url origin https://Maduflavins:${GITHUB_PASSWORD}@github.com/spleet-africa/admin-manifests.git'
+        sh 'git commit -m "updating image version"'
+        echo "pushing....."
+        sh 'git push https://Maduflavins:${GITHUB_PASSWORD}@github.com/spleet-africa/admin-manifests.git HEAD:dev'
+        echo "credentials: $GITHUB_PASSWORD"
+          
+        } 
+    stage("Notify Slack"){
+            steps{
+                notifyUsers()
+            }
+        }
+
+        // withCredentials([usernamePassword(credentialsId: 'gitlab-creds', passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
+        //      sh "git push https://${GIT_USERNAME}:${GIT_PASSWORD}@gitlab.com/spleetproduct/argocd-manifests.git HEAD:main"
+        //  }
+            //sh "git push https://${GITLAB_TOKEN}@gitlab.com/spleetproduct/argocd-manifests.git HEAD:main"
+       
+
+        
+        
+    
+        // dir('argocd-manifests/frontend/dev'){
+        //     sh "pwd"
+        //     sh "ls -a"
+        // }
+
+        }
+      }
+    }  
+    // stage('Build-Jar-file') {
+    //   steps {
+    //     container('node') {
+    //       sh 'npm install'
+    //     }
+    //   }
+    // }
+    // stage('Update-Manifest') {
+    //   steps {
+    //     container('node') {
+    //       dir('argocd-manifests/frontend/dev'){
+    //         //   sh "git config user.email maduabuchi@spleet.ng"
+    //         //   sh "git config user.name Maduabuchi"
+    //          sh "pwd"
+    //          sh "ls"
+    //           sh 'sed -i "s/<VERSION>/${VERSION}/g" dev.yaml'
+    //         //   sh "git config user.email maduabuchi@spleet.ng"
+    //         //   sh "git config user.name Maduabuchi"
+    //           sh "git add -A"
+    //           sh "git commit -m updating image version with $VERSION"
+    //           sh "git push https://${GITLAB_TOKEN}@gitlab.com/spleetproduct/argocd-manifests.git HEAD:main"
+              
+    //         }
+    //     }
+    //   }
+    // }
+    // stage('Login-Into-Docker') {
+    //   steps {
+    //     container('docker') {
+    //       sh 'docker login -u <docker_username> -p <docker_password>'
+    //   }
+    // }
+    // }
+    // stage('Commit and Push Image') {
+    //   steps {
+    //     container('docker') {
+    //             sh "git config user.email maduabuchi@spleet.ng"
+    //             sh "git config user.name Maduabuchi"
+    //             // sh "git config --global user.email 'maduabuchi@spleet.ng'"
+    //             // sh "git remote set-url origin http:$GITLAB_TOKEN@gitlab.com/spleetproduct/argocd-manifests"
+    //             // sh "git checkout feature-$VERSION"
+    //             sh "git add -A"
+    //             sh "git commit -m updating image version with $VERSION"
+    //         // sh "git push feature-$VERSION"
+    //            sh "git push https://${GITLAB_TOKEN}@gitlab.com/spleetproduct/argocd-manifests.git HEAD:main"
+    //     }
+    //  }
+    // }
+
+  }
+    // post {
+    //   always {
+    //     container('docker') {
+    //       sh 'docker logout'
+    //   }
+    //   }
+    // }
+}
