@@ -1,0 +1,267 @@
+def notifyUsers(){
+    if (currentBuild.currentResult == "SUCCESS") {
+    def message = "@here ${GIT_BRANCH} - ${GIT_COMMIT} image Build for SEO <${env.BUILD_URL}|${currentBuild.displayName}> " +
+        "${currentBuild.currentResult} Image has been deployed to DockerHub"
+    slackSend(message: message, channel: '#pipeline-notifications', color: 'good', token: 'slack-notification')
+} else {
+    def message = "@here ${GIT_BRANCH} - ${GIT_COMMIT} Build <${env.BUILD_URL}|${currentBuild.displayName}> " +
+        "${currentBuild.currentResult} Image has not been deployed to DockerHub"
+    slackSend(message: message, channel: '#pipeline-notifications', color: 'danger', token: 'slack-notification')
+}
+}
+
+pipeline {
+    agent {
+      kubernetes {
+        yaml '''
+        apiVersion: v1
+        kind: Pod
+        spec:
+          containers:
+          - name: node
+            image: node:16
+            command:
+            - cat
+            tty: true
+          - name: docker
+            image: docker:latest
+            command:
+            - cat
+            tty: true
+            volumeMounts:
+             - mountPath: /var/run/docker.sock
+               name: docker-sock
+          volumes:
+          - name: docker-sock
+            hostPath:
+              path: /var/run/docker.sock    
+          '''
+        }
+        }
+    //  docker {
+    //             image 'spleet/spleet-public-frontend-dev'
+    //             image 'spleet/spleet-public-frontend-prod'
+    //             label 'docker'
+    //             args '-u myseouser:myseogroup'
+    //         }
+        
+    environment {
+        DEV_NAME = "spleet-public-frontend-dev"
+        PROD_NAME = "spleet-public-frontend-prod"
+        VERSION = "${env.BUILD_ID}-${env.GIT_COMMIT}"
+        IMAGE_REPO = "spleet"
+        // NAME = "newfrontend-dev"
+        // VERSION = "${env.BUILD_ID}-${env.GIT_COMMIT}"
+        // IMAGE_REPO = "spleet"
+        // ARGOCD_TOKEN = credentials("argocd-deploy-role")
+        //GITLAB_TOKEN = credentials("newest-token-gitlab")
+        USERNAME = "Maduabuchi"
+        // VAULT_PATH = "/usr/local/bin/vault"
+        DEV_VAULT_CREDENTIALS = credentials('DEV_VAULT_CREDENTIALS')
+        PROD_VAULT_CREDENTIALS = credentials('PROD_VAULT_CREDENTIALS')
+    
+
+        BASE_URL = credentials('BASE_URL')
+        CLOUDINARY_BASE_URL = credentials('CLOUDINARY_BASE_URL')
+        DASHBOARD_DOMAIN = credentials('DASHBOARD_DOMAIN')
+        GOOGLE_MAP_KEY = credentials('GOOGLE_MAP_KEY')
+        MAP_ID = credentials('MAP_ID')
+        RNPL_BASE_URL = credentials('RNPL_BASE_URL')
+        NODE_ENV = credentials('NODE_ENV')
+        NUXT_SITE_ENV = credentials('NUXT_SITE_ENV')
+        WELCOME_PAGE = credentials('WELCOME_PAGE')
+         
+    }
+    stages {
+       stage("Checkout code"){
+            steps{
+                container('node'){
+                 checkout scm
+                }
+            }
+        }
+
+        // stage('Install Vault CLI') {
+        //     steps {
+        //         container('node') {
+        //             // Install Vault CLI
+        //             sh 'apt-get update && apt-get install -y lsb-release software-properties-common'
+        //             sh 'curl -fsSL https://apt.releases.hashicorp.com/gpg | apt-key add -'
+        //             sh 'apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main"'
+        //             sh 'apt-get update && apt-get install -y vault'
+        //         }
+        //     }
+        // }
+        // stage('Set up PATH and login to Vault') {
+        //     steps {
+        //         container('node') {
+        //             // Set up PATH
+        //             sh 'export PATH=$PATH:/usr/local/bin'
+
+        //             // Login to Vault using token
+        //             sh "vault login ${DEV_VAULT_CREDENTIALS}"
+        //             sh "vault login ${PROD_VAULT_CREDENTIALS}"
+        //         }
+        //     }
+        // }
+        stage('Build Dev Image') {
+            when {
+                branch 'dev'
+            }
+            steps {
+                container('docker') {
+                    script {
+                        // def buildArgs = [
+                        //     "BASE_URL=${BASE_URL}",
+                        //     "APP_DOMAIN=https://www.spleet.africa",
+                        //     "CLOUDINARY_BASE_URL=${CLOUDINARY_BASE_URL}",
+                        //     "DOMAIN=${DOMAIN}",
+                        //     "GOOGLE_MAP_KEY=${GOOGLE_MAP_KEY}",
+                        //     "MAP_ID=${MAP_ID}",
+                        //     "RNPL_BASE_URL=${RNPL_BASE_URL}"
+                        // ].join(' ')
+
+            
+                        sh "docker build -t ${DEV_NAME} --build-arg BASE_URL=${BASE_URL} --build-arg CLOUDINARY_BASE_URL=${CLOUDINARY_BASE_URL} --build-arg DASHBOARD_DOMAIN=${DASHBOARD_DOMAIN} --build-arg=GOOGLE_MAP_KEY=${GOOGLE_MAP_KEY} --build-arg MAP_ID=${MAP_ID} --build-arg RNPL_BASE_URL=${RNPL_BASE_URL} --build-arg NUXT_SITE_ENV=${NUXT_SITE_ENV} --build-arg NODE_ENV=${NODE_ENV} --build-arg WELCOME_PAGE=${WELCOME_PAGE} ."
+
+                        sh "docker tag ${DEV_NAME}:latest ${IMAGE_REPO}/${DEV_NAME}:${VERSION}"
+                    }
+                }
+            }
+        }
+
+        stage('Build Prod Image') {
+            when {
+                branch 'prod'
+            }
+            steps {
+                container('docker') {
+                    script {
+                        // def buildArgs = [
+                        //     "BASE_URL=${BASE_URL}",
+                        //     "APP_DOMAIN=https://www.spleet.africa",
+                        //     "CLOUDINARY_BASE_URL=${CLOUDINARY_BASE_URL}",
+                        //     "DOMAIN=${DOMAIN}",
+                        //     "GOOGLE_MAP_KEY=${GOOGLE_MAP_KEY}",
+                        //     "MAP_ID=${MAP_ID}",
+                        //     "RNPL_BASE_URL=${RNPL_BASE_URL}"
+                        // ].join(' ')
+
+            
+                        sh "docker build -t ${PROD_NAME} --build-arg BASE_URL=https://api-prod.spleet.africa/v1 --build-arg CLOUDINARY_BASE_URL=https://res.cloudinary.com/splmic/image/upload --build-arg DASHBOARD_DOMAIN=https://dashboard.spleet.africa --build-arg=GOOGLE_MAP_KEY=AIzaSyBMAYODSWcmdTJ5cZ5tErd2OwZJshPCdDE --build-arg MAP_ID=17159323e2d0483c --build-arg RNPL_BASE_URL=https://rnpl.spleet.africa/v1/ --build-arg WELCOME_PAGE=https://spleet.africa --build-arg NODE_ENV=production --build-arg NUXT_SITE_ENV=production ."
+
+                        sh "docker tag ${PROD_NAME}:latest ${IMAGE_REPO}/${PROD_NAME}:${VERSION}"
+                    }
+                }
+            }
+        }
+
+
+        // stage('Build Image') {
+        //     steps {
+        //         container('docker') {
+        //             script {
+        //                 def vaultToken = env.BRANCH_NAME == 'dev' ? env.DEV_VAULT_CREDENTIALS : env.PROD_VAULT_CREDENTIALS
+        //                 sh '''
+        //                 vault login $vaultToken '''
+        //                 if (env.BRANCH_NAME == 'dev') {
+        //                      // Dev environment variables
+        //                     sh ''' docker build -t ${DEV_NAME} \\
+        //                     --build-arg BASE_URL=${BASE_URL} \\
+        //                     --build-arg CLOUDINARY_BASE_URL=${CLOUDINARY_BASE_URL} \\
+        //                     --build-arg DASHBOARD_DOMAIN=${DASHBOARD_DOMAIN} \\
+        //                     --build-arg=GOOGLE_MAP_KEY=${GOOGLE_MAP_KEY} \\
+        //                     --build-arg MAP_ID=${MAP_ID} \\
+        //                     --build-arg RNPL_BASE_URL=${RNPL_BASE_URL} \\
+        //                     --build-arg WELCOME_PAGE=${WELCOME_PAGE} .'''
+        //                     sh "docker tag ${DEV_NAME}:latest ${IMAGE_REPO}/${DEV_NAME}:${VERSION}"
+
+
+                          
+        //                 } else if (env.BRANCH_NAME == 'prod') {
+        //                     // Prod environment variables
+        //                     sh '''docker build -t ${PROD_NAME} \\
+        //                     --build-arg BASE_URL=${BASE_URL} \\
+        //                     --build-arg CLOUDINARY_BASE_URL=${CLOUDINARY_BASE_URL} \\
+        //                     --build-arg DASHBOARD_DOMAIN=${DASHBOARD_DOMAIN} \\
+        //                     --build-arg=GOOGLE_MAP_KEY=${GOOGLE_MAP_KEY} \\
+        //                     --build-arg MAP_ID=${MAP_ID} \\
+        //                     --build-arg RNPL_BASE_URL=${RNPL_BASE_URL} \\
+        //                     --build-arg NUXT_SITE_ENV=${NUXT_SITE_ENV} \\
+        //                     --build-arg NODE_ENV=${NODE_ENV} \\
+        //                     --build-arg WELCOME_PAGE=${WELCOME_PAGE}.'''
+        //                     sh "docker tag ${PROD_NAME}:latest ${IMAGE_REPO}/${PROD_NAME}:${VERSION}"
+
+
+        //                 } else {
+        //                      echo "Unsupported branch for image build"
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
+
+
+
+        
+       
+        stage('Push Dev Image'){
+            when{
+              branch 'dev'
+            }
+            steps{
+                container('docker'){
+                    withDockerRegistry(credentialsId: 'dockerhub', url: ''){
+                      sh "docker push ${IMAGE_REPO}/${DEV_NAME}:${VERSION}"
+                    }
+                }
+                
+            }
+        }
+
+        stage('Push Prod Image'){
+            when{
+              branch 'prod'
+            }
+            steps{
+                container('docker'){
+                    withDockerRegistry(credentialsId: 'dockerhub', url: ''){
+                      sh "docker push ${IMAGE_REPO}/${PROD_NAME}:${VERSION}"
+                    }
+                }
+                
+            }
+        }
+        
+
+        stage("Trigger Update For Dev"){
+              when{
+                  branch 'dev'
+                }
+            steps{
+                container('docker') {
+                   echo "Triggering Manifest Job"
+                
+                   build job: 'public-dev-manifest', parameters: [string(name: 'VERSION', value: env.VERSION)]
+
+                }
+            }
+        }  
+          
+        stage("Trigger Update for Prod"){
+               when{
+                   branch 'prod'
+                }
+            steps{
+                   container('docker'){
+                   build job: 'public-prod-manifest', parameters: [string(name: 'VERSION', value: env.VERSION)]
+                }  
+            }
+        }
+        stage("Notify Slack"){
+            steps{
+                notifyUsers()
+        }
+    }
+}      
+}
