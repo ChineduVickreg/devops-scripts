@@ -1,0 +1,118 @@
+## FROM node:18
+
+## ENV APP_DIR /app/
+## WORKDIR ${APP_DIR}
+
+## COPY . ./
+## RUN yarn install 
+## EXPOSE 80
+## ENV HOST=0.0.0.0
+## ENV NUXT_PORT=80
+
+## CMD ["yarn", "dev"]
+
+
+
+## FROM node:18-alpine
+## ENV APP_DIR /app/
+## WORKDIR ${APP_DIR}
+## COPY . ./
+## RUN yarn install --network-timeout 600000
+## EXPOSE 80
+## ENV HOST=0.0.0.0
+## ENV NUXT_PORT=80
+## CMD ["yarn", "dev"]
+
+
+# pull official base image
+## FROM node:18-alpine AS builder
+## ARG API_URL
+## ENV API_URL ${API_URL}
+## ENV DOMAIN ${DOMAIN}
+# Add a work directory
+## WORKDIR /app
+# Cache and Install dependencies
+## COPY package.json .
+## RUN yarn install
+# Copy app files
+## COPY . .
+# Build the app
+## RUN yarn build
+# stage 2 - build the final image and copy the react build files
+## FROM nginx:stable-alpine
+# Copy built assets from builder
+## COPY --from=builder /app/.output/public /usr/share/nginx/html
+# Add your nginx.conf
+## COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Expose port
+## EXPOSE 80
+## CMD ["nginx", "-g", "daemon off;"]
+
+# pull official base image
+FROM node:21-alpine AS builder
+# RUN apk add --no-cache \
+#     bash \
+#     ca-certificates \
+#     openssl \
+#     jq \
+#     && wget -O vault.zip https://releases.hashicorp.com/vault/1.9.6/vault_1.9.6_linux_amd64.zip \
+#     && unzip vault.zip \
+#     && mv vault /usr/local/bin/ \
+#     && rm vault.zip
+# # Create a non-root user
+# RUN addgroup -S myseogroup && adduser -S myseouser -G myseogroup
+
+# # Switch to the non-root user
+# USER myseouser
+# ARG API_URL
+# ENV API_URL ${API_URL}
+ARG BASE_URL
+ENV BASE_URL ${BASE_URL}
+ARG DASHBOARD_DOMAIN
+ENV DASHBOARD_DOMAIN ${DASHBOARD_DOMAIN}
+ARG GOOGLE_MAP_KEY
+ENV GOOGLE_MAP_KEY ${GOOGLE_MAP_KEY}
+ARG RNPL_BASE_URL
+ENV RNPL_BASE_URL ${RNPL_BASE_URL}
+ARG MAP_ID
+ENV MAP_ID ${MAP_ID}
+ARG CLOUDINARY_BASE_URL
+ENV CLOUDINARY_BASE_URL ${CLOUDINARY_BASE_URL}
+ARG WELCOME_PAGE
+ENV WELCOME_PAGE ${WELCOME_PAGE}
+ARG NODE_ENV
+ENV NODE_ENV ${NODE_ENV}
+ARG NUXT_SITE_ENV
+ENV NUXT_SITE_ENV ${NUXT_SITE_ENV}
+
+
+
+
+# Add a workBASE_URL directory
+WORKDIR /app
+# Cache and Install dependencies
+COPY package.json .
+RUN yarn install
+# Copy app files
+COPY . .
+# Build the app
+RUN yarn build
+EXPOSE 3001
+ENV HOST=0.0.0.0
+ENV NUXT_PORT=3001
+CMD ["yarn", "start"]
+
+
+
+# FROM node:16.0.0
+
+# ENV APP_DIR /app/
+# WORKDIR ${APP_DIR}
+
+# COPY . ./
+# RUN yarn install --network-timeout 600000
+# EXPOSE 80
+# ENV HOST=0.0.0.0
+# ENV NUXT_PORT=80
+
+# CMD ["yarn", "prod"]
